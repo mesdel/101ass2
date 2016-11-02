@@ -7,19 +7,20 @@
 
 ;; a ws is
 ;; - (make-ws slider-frac end-frame)
-;; where slider-frac is a number between
-;; zero and one, and end-frame is a frame
+;; where hori-frac and vert-frac are numbers between
+;; zero and one that correspond to x and y values
+; respectively, and end-frame is a frame
 ;; number
-(define-struct ws [hori-frac vert-frac end-frame tempo pitch])
+(define-struct ws [hori-frac vert-frac end-frame])
 
 (define ps (make-pstream))
 
 ;; examples:
-(make-ws 0.5 0.5 2000 60 60)
-(make-ws 0.7 0.7 80000 120 69)
+(make-ws 0.5 0.5 2000)
+(make-ws 0.7 0.7 80000)
 
 (define INITIAL-STATE
-  (make-ws 0.5 0.5 0 120 69))
+  (make-ws 0.5 0.5 0))
 
 ;GUI constants and crosshair definition
 (define BOX-WIDTH 1200)
@@ -57,10 +58,10 @@
 (define (handle-mouse ws x y event)
   (cond [(string=? event "button-down")
          (make-ws (/ x BOX-WIDTH) (/ y BOX-HEIGHT)
-                  (ws-end-frame ws)(ws-tempo ws) (ws-pitch ws))]
+                  (ws-end-frame ws))]
         [(string=? event "drag")
          (make-ws (/ x BOX-WIDTH) (/ y BOX-HEIGHT)
-                  (ws-end-frame ws) (ws-tempo ws) (ws-pitch ws))]
+                  (ws-end-frame ws))]
         [else ws]))
 
 ;(check-expect
@@ -84,10 +85,10 @@
   (cond [(time-to-play? (ws-end-frame ws)
                         (pstream-current-frame ps))
          (both
-          (queue-next-fragment (ws-tempo ws)
+          (queue-next-fragment (ws-hori-frac ws)
            (ws-end-frame ws))
           (make-ws (ws-hori-frac ws) (ws-vert-frac ws)
-                   (+ (ws-end-frame ws) PLAY-FRAMES) (ws-tempo ws) (ws-pitch ws))
+                   (+ (ws-end-frame ws) PLAY-FRAMES))
           )]
         [else ws]))
 
