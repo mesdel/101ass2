@@ -10,77 +10,70 @@
 ;; where slider-frac is a number between
 ;; zero and one, and end-frame is a frame
 ;; number
-(define-struct ws [slider-frac end-frame])
+(define-struct ws [hori-frac vert-frac end-frame tempo pitch])
 
 (define ps (make-pstream))
 
 ;; examples:
-(make-ws 0.5 2000)
-(make-ws 0.7 80000)
+(make-ws 0.5 0.5 2000 60 60)
+(make-ws 0.7 0.7 80000 120 69)
 
 (define INITIAL-STATE
-  (make-ws 0.0 0))
-
-;NEED-TO-REMOVE
-(define song
-  (resample-to-rate
-   FRAME-RATE
-   (rs-read/clip "Documents/Racket/Powerful.wav"
-                 0
-                 (* 20 FRAME-RATE))))
+  (make-ws 0.5 0.5 0 120 69))
 
 (define BOX-WIDTH 1200)
 (define BOX-HEIGHT 200)
-(define SLIDER-Y (/ BOX-HEIGHT 2))
-(define SLIDER-WIDTH 30)
-(define SLIDER-HEIGHT 190)
-(define SLIDER (rectangle SLIDER-WIDTH
-                          SLIDER-HEIGHT
-                          "solid"
-                          "orange"))
+(define CROSSHAIR-LENGTH 30)
+(define CROSSHAIR-WIDTH 10)
+(define crosshair (place-image (rectangle CROSSHAIR-WIDTH CROSSHAIR-LENGTH "solid" "purple")
+                               (/ CROSSHAIR-LENGTH 2) (/ CROSSHAIR-LENGTH 2)
+                               (place-image
+                                (rectangle CROSSHAIR-LENGTH CROSSHAIR-WIDTH "solid" "purple")
+                                (/ CROSSHAIR-LENGTH 2) (/ CROSSHAIR-LENGTH 2)
+                                (rectangle CROSSHAIR-LENGTH CROSSHAIR-LENGTH "solid" "light blue"))))
+
 (define SLIDER-BG (rectangle BOX-WIDTH
                              BOX-HEIGHT
                              "solid"
-                             "blue"))
+                             "light blue"))
 ;; draw the slider
 ;; ws -> image
 (define (draw-slider ws)
-  (place-image SLIDER
-               (* (ws-slider-frac ws)
+  (place-image crosshair
+               (* (ws-hori-frac ws)
                   BOX-WIDTH)
-               SLIDER-Y
+               (* (ws-vert-frac ws)
+                  BOX-HEIGHT)
                SLIDER-BG))
 
 (check-expect
- (draw-slider (make-ws 0.5 1234))
- (place-image SLIDER
-              600 SLIDER-Y
-              SLIDER-BG))
+ (draw-slider (make-ws 0.5 0.5 1234 120 69))
+ (place-image crosshair 600 600 SLIDER-BG))
 
 ;; handle a mouse action; on a drag or
 ;; click, update the slider position
 ;; ws number number event -> ws
 (define (handle-mouse ws x y event)
   (cond [(string=? event "button-down")
-         (make-ws (/ x BOX-WIDTH)
-                  (ws-end-frame ws))]
+         (make-ws (/ x BOX-WIDTH) (/ y BOX-HEIGHT)
+                  (ws-end-frame ws)(ws-tempo ws) (ws-pitch ws))]
         [(string=? event "drag")
-         (make-ws (/ x BOX-WIDTH)
-                  (ws-end-frame ws))]
+         (make-ws (/ x BOX-WIDTH) (/ y BOX-HEIGHT)
+                  (ws-end-frame ws) (ws-tempo ws) (ws-pitch ws))]
         [else ws]))
 
 (check-expect
- (handle-mouse (make-ws 0.6 1234)
+ (handle-mouse (make-ws 0.6 0.6 1234 120 69)
                150 44 "move")
- (make-ws 0.6 1234))
+ (make-ws 0.6 0.6 1234 120 69))
 (check-expect
- (handle-mouse (make-ws 0.6 4243)
+ (handle-mouse (make-ws 0.6 0.6 4243 120 69)
                150 44 "drag")
- (make-ws (/ 150 BOX-WIDTH) 4243))
+ (make-ws (/ 150 BOX-WIDTH) 0.6 4243 120 69))
 (check-expect
- (handle-mouse (make-ws 0.6 1123)
+ (handle-mouse (make-ws 0.6 0.6 1123 120 69)
                150 44 "button-down")
- (make-ws (/ 150 BOX-WIDTH) 1123))
+ (make-ws (/ 150 BOX-WIDTH) 0.6 1123 120 69))
 
 ;NEED-TO-CHANGE
 ;; if it's time, queue up the next section
@@ -89,34 +82,28 @@
   (cond [(time-to-play? (ws-end-frame ws)
                         (pstream-current-frame ps))
          (both
-          (queue-next-fragment
-           (round (* (ws-slider-frac ws)
-                     (rs-frames song)))
+          (queue-next-fragment (ws-tempo ws)
            (ws-end-frame ws))
-          (make-ws (+ (ws-slider-frac ws) PLAY-POSNFRAC)
-                   (+ (ws-end-frame ws) PLAY-FRAMES))
+          (make-ws (ws-hori-frac ws) (ws-vert-frac ws)
+                   (+ (ws-end-frame ws) PLAY-FRAMES) (ws-tempo ws) (ws-pitch ws))
           )]
         [else ws]))
 
 ;NEED-TO-CHANGE
 ;; queue up the next fragment
-(define (queue-next-fragment song-frame frame-to-play)
-  (pstream-queue ps
-                 (clip song song-frame (+ song-frame PLAY-FRAMES))
-                 frame-to-play))
+(define (queue-next-fragment tempo frame-to-play)
+  (pstream-queue ps drumroll frame-to-play))
 
 ;; how long should each queued segment be, in seconds?
 (define PLAY-SECONDS 1/20)
 ;; .. in frames?
 (define PLAY-FRAMES (* PLAY-SECONDS FRAME-RATE))
-;; .. as a fraction of the slider?
-(define PLAY-POSNFRAC (/ PLAY-SECONDS (/ (rs-frames song) FRAME-RATE)))
 ;; how long should the big-bang ticks be?
 (define TICK-LEN 1/40)
 ;; the longest lead time for which we'll queue the next sound
 (define MAX-QUEUE-INTERVAL (* 3/80 FRAME-RATE))
 
-
+(define drumroll (silence 1)) ;place-holder
 
 ;; is it time to play the next chunk, yet?
 (define (time-to-play? end-frame cur-frame)
