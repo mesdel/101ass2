@@ -13,23 +13,23 @@
 (define-struct ws [hori-frac vert-frac end-frame tempo pitch])
 
 (define INITIAL-STATE
-  (make-ws 0.0 0.0 0 120 69))
+  (make-ws 0.5 0.5 0 120 69))
 
 (define BOX-WIDTH 1200)
 (define BOX-HEIGHT 200)
 (define CROSSHAIR-LENGTH 30)
 (define CROSSHAIR-WIDTH 10)
-(define crosshair (place-image (rectangle CROSSHAIR-WIDTH CROSSHAIR-LENGTH "solid" "orange")
+(define crosshair (place-image (rectangle CROSSHAIR-WIDTH CROSSHAIR-LENGTH "solid" "purple")
                                (/ CROSSHAIR-LENGTH 2) (/ CROSSHAIR-LENGTH 2)
                                (place-image
-                                (rectangle CROSSHAIR-LENGTH CROSSHAIR-WIDTH "solid" "orange")
+                                (rectangle CROSSHAIR-LENGTH CROSSHAIR-WIDTH "solid" "purple")
                                 (/ CROSSHAIR-LENGTH 2) (/ CROSSHAIR-LENGTH 2)
-                                (rectangle CROSSHAIR-LENGTH CROSSHAIR-LENGTH "solid" "blue"))))
+                                (rectangle CROSSHAIR-LENGTH CROSSHAIR-LENGTH "solid" "light blue"))))
 
 (define SLIDER-BG (rectangle BOX-WIDTH
                              BOX-HEIGHT
                              "solid"
-                             "blue"))
+                             "light blue"))
 
 ;; draw the slider
 ;; ws -> image
