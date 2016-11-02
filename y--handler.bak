@@ -1,0 +1,27 @@
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-intermediate-reader.ss" "lang")((modname y--handler) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
+(define MAX-HEIGHT 1000)
+(define MIN-HEIGHT 0)
+(define MAX-FREQ 7902.13)
+(define MIN-FREQ 16.35)
+(define HEIGHT-FREQ-RATIO
+  (/ (- MAX-HEIGHT MIN-HEIGHT)
+     (- MAX-FREQ MIN-FREQ)))
+
+;; takes a y-position and returns the correspoding sound frequencies
+;; Number -> Number
+(check-expect (y-freq 100)
+              (* (- MAX-HEIGHT 100) HEIGHT-FREQ-RATIO))
+(define (y-freq y)
+  (* (- MAX-HEIGHT y) HEIGHT-FREQ-RATIO))
+
+;; makes a tone of a given frequency
+;; Number -> rsound
+(check-expect (tone-maker 400)
+              (signal->rsound
+               (sine-wave (y-freq 400))))
+(define (tone-maker freq)
+  (signal->rsound
+   (sine-wave (y-freq freq))))
+
